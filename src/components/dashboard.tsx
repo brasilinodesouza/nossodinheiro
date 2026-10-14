@@ -7,7 +7,6 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import Link from "next/link";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -27,7 +26,6 @@ import {
   RefreshCw,
   Settings,
   Share2,
-  ShieldCheck,
   Trash2,
   Upload,
   Users,
@@ -107,12 +105,10 @@ export function Dashboard({
   initialSnapshot,
   household,
   month: initialMonth,
-  demo = false,
 }: {
   initialSnapshot: Snapshot;
   household: Household;
   month: Month;
-  demo?: boolean;
 }) {
   const [snapshot, setSnapshot] = useState(initialSnapshot);
   const [month, setMonth] = useState(initialMonth);
@@ -145,17 +141,6 @@ export function Dashboard({
     setMessage("");
     setPending(candidate);
     try {
-      if (demo) {
-        setSnapshot({
-          state: parseState(candidate),
-          version: snapshot.version + 1,
-        });
-        setPending(null);
-        setMessage(
-          "Atualizado na demonstração. Os dados ficam apenas nesta sessão.",
-        );
-        return true;
-      }
       const result = await saveFinance(candidate, snapshot.version);
       if (!result.ok) {
         setError(result.error);
@@ -190,10 +175,6 @@ export function Dashboard({
     setBusy(true);
     setError("");
     try {
-      if (demo) {
-        setMessage("A demonstração usa apenas os dados desta sessão.");
-        return;
-      }
       const result = await refreshFinance();
       if (!result.ok) {
         setError(result.error);
@@ -343,17 +324,6 @@ export function Dashboard({
 
   return (
     <div className="app-shell">
-      {demo && (
-        <div className="demo-banner">
-          <span>
-            <ShieldCheck size={15} /> Demonstração · dados de exemplo,
-            alteráveis nesta sessão
-          </span>
-          <Link href="/login">
-            Usar minha conta <ArrowUpRight size={14} />
-          </Link>
-        </div>
-      )}
       <header className="app-header">
         <Brand />
         <div className="header-tools">
@@ -480,13 +450,11 @@ export function Dashboard({
         </div>
         <div className="sync-line">
           <span className="sync-dot" />
-          {demo
-            ? "Modo demonstração"
-            : busy
-              ? "Conectando…"
-              : pending
-                ? "Há alterações pendentes"
-                : `Dados carregados · ${memberCount > 1 ? `${memberCount} pessoas no espaço` : "convide seu parceiro ou parceira"}`}
+          {busy
+            ? "Conectando…"
+            : pending
+              ? "Há alterações pendentes"
+              : `Dados carregados · ${memberCount > 1 ? `${memberCount} pessoas no espaço` : "convide seu parceiro ou parceira"}`}
           <span className="sync-period">
             {tab === "savings" ? "Saldo real · independente do mês" : period}
           </span>
@@ -1118,9 +1086,7 @@ export function Dashboard({
                 <div>
                   <strong>{household.name}</strong>
                   <p>
-                    {demo
-                      ? "Demonstração com dados de exemplo"
-                      : `${memberCount} ${memberCount === 1 ? "pessoa participa" : "pessoas participam"} deste espaço. Todos podem visualizar e editar os dados financeiros.`}
+                    {`${memberCount} ${memberCount === 1 ? "pessoa participa" : "pessoas participam"} deste espaço. Todos podem visualizar e editar os dados financeiros.`}
                   </p>
                 </div>
               </div>
@@ -1136,12 +1102,9 @@ export function Dashboard({
                   O link vale por 7 dias e aceita várias pessoas. Gerar outro
                   link invalida o anterior.
                 </p>
-                {demo && (
-                  <p>Crie sua conta para gerar um convite de verdade.</p>
-                )}
                 <button
                   className="button secondary full"
-                  disabled={busy || demo}
+                  disabled={busy}
                   onClick={invite}
                 >
                   <Heart size={16} />
@@ -1222,18 +1185,12 @@ export function Dashboard({
                   {message}
                 </p>
               )}
-              {demo ? (
-                <Link className="button primary full" href="/login">
-                  Entrar com minha conta <ArrowUpRight size={16} />
-                </Link>
-              ) : (
-                <form action={signOut}>
-                  <button className="button secondary full">
-                    <LogOut size={16} />
-                    Sair da conta
-                  </button>
-                </form>
-              )}
+              <form action={signOut}>
+                <button className="button secondary full">
+                  <LogOut size={16} />
+                  Sair da conta
+                </button>
+              </form>
             </div>
           )}
           {pending && editor.type !== "settings" && (

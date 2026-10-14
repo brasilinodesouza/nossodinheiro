@@ -1137,27 +1137,6 @@ label textarea:focus {
 .empty-state .button svg {
   margin: 0;
 }
-.demo-banner {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  align-items: center;
-  padding: 10px 16px;
-  font-size: 10px;
-  background: #e8c97e14;
-  color: var(--gold);
-  border-bottom: 1px solid #e8c97e25;
-}
-.demo-banner span,
-.demo-banner a {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.demo-banner a {
-  font-weight: 600;
-  white-space: nowrap;
-}
 .pending-actions {
   display: flex;
   gap: 10px;
@@ -1841,19 +1820,6 @@ label textarea:focus {
     font-size: 8px;
     max-width: 115px;
     text-align: right;
-  }
-  .demo-banner {
-    gap: 10px;
-    justify-content: space-between;
-    font-size: 8px;
-    padding: 9px 12px;
-    line-height: 1.6;
-  }
-  .demo-banner span svg {
-    flex-shrink: 0;
-  }
-  .demo-banner a {
-    font-size: 8px;
   }
   .salary-grid {
     grid-template-columns: 1fr;

@@ -18,7 +18,7 @@ App de finanças para um casal, feito com Next.js, React, TypeScript e Supabase,
 - Convite de instalação no Android e orientação de instalação no iPhone/iPad.
 - Detecção automática de novas versões, com proteção de formulários e alterações pendentes.
 
-## Experimentar no computador
+## Usar no computador
 
 Use Node.js 22 ou superior. Na pasta do projeto:
 
@@ -27,7 +27,7 @@ npm ci
 npm run dev
 ```
 
-Abra http://localhost:3000/demo para experimentar com dados fictícios. As alterações da demonstração ficam apenas em memória e são descartadas ao recarregar. A demonstração funciona sem configurar o Supabase.
+Configure o Supabase conforme abaixo e abra http://localhost:3000. Crie uma conta com usuário e senha e um espaço para registrar seus dados. Novos espaços começam vazios, com valores zerados. Todas as alterações são salvas no Supabase. O modo de demonstração foi removido; o endereço antigo `/demo` redireciona para o app real.
 
 ## Conectar ao Supabase
 

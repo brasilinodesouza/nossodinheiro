@@ -107,8 +107,8 @@ export function AuthForm({
           </p>
           {!configured && (
             <div className="notice">
-              A conexão do app ainda precisa ser configurada. Você pode conhecer
-              as telas com dados de exemplo abaixo.
+              A conexão do app ainda precisa ser configurada para criar sua
+              conta e salvar os dados.
             </div>
           )}
           {invited && (
@@ -189,12 +189,6 @@ export function AuthForm({
               {mode === "login" ? "Criar conta" : "Entrar"}
             </button>
           </p>
-          <div className="auth-divider">
-            <span>CONHEÇA O APP</span>
-          </div>
-          <Link className="button secondary full" href="/demo">
-            Explorar demonstração <ArrowRight size={16} />
-          </Link>
           <small className="privacy-note">
             Seus dados financeiros ficam no espaço de vocês.
           </small>

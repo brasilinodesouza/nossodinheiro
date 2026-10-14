@@ -133,13 +133,7 @@ export function getList(
       ...item,
       amount: section === "fixos" ? item.amount : 0,
     }));
-  return section === "fixos"
-    ? ["Aluguel", "Luz", "Internet", "Água"].map((name, index) => ({
-        id: `default-${index}`,
-        name,
-        amount: 0,
-      }))
-    : [];
+  return [];
 }
 export function cents(value: number) {
   return Math.round(value * 100);
@@ -190,43 +184,4 @@ export function formatMoney(value: number) {
     style: "currency",
     currency: "BRL",
   }).format(value);
-}
-
-export function demoState(month: Month): FinanceState {
-  return {
-    [monthKey(month, "salary")]: {
-      p1name: "Alex",
-      p1gross: 6200,
-      p1disc: 850,
-      p2name: "Marina",
-      p2gross: 4800,
-      p2disc: 620,
-    },
-    [monthKey(month, "comm_p1")]: [
-      { id: "bonus", name: "Comissão do mês", amount: 450 },
-    ],
-    [monthKey(month, "fixos")]: [
-      { id: "rent", name: "Aluguel", amount: 1800 },
-      { id: "light", name: "Luz", amount: 185.5 },
-      { id: "internet", name: "Internet", amount: 119.9 },
-      { id: "water", name: "Água", amount: 78 },
-    ],
-    [monthKey(month, "variaveis")]: [
-      { id: "market", name: "Supermercado", amount: 850 },
-      { id: "restaurant", name: "Jantar a dois", amount: 160 },
-      { id: "transport", name: "Transporte", amount: 220 },
-    ],
-    [monthKey(month, "cartao")]: [
-      { id: "invoice", name: "Fatura do cartão", amount: 780 },
-    ],
-    fin_poupanca_objetivos: [
-      {
-        id: "reserve",
-        name: "Reserva de emergência",
-        amount: 8500,
-        goal: 15000,
-      },
-      { id: "travel", name: "Nossa próxima viagem", amount: 2400, goal: 6000 },
-    ],
-  };
 }
