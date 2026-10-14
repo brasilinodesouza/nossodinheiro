@@ -49,7 +49,7 @@ export type Household = {
   id: string;
   name: string;
   owner_id: string;
-  partner_id: string | null;
+  member_count: number;
 };
 
 export function parseState(input: unknown): FinanceState {

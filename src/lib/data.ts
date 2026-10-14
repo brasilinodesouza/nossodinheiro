@@ -7,7 +7,7 @@ const householdSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   owner_id: z.string().uuid(),
-  partner_id: z.string().uuid().nullable(),
+  member_count: z.number().int().positive(),
 });
 export async function getHousehold() {
   const client = await createClient();
@@ -19,15 +19,24 @@ export async function getHousehold() {
     throw new Error("Sua sessão expirou. Entre novamente.");
   const { data, error } = await client
     .from("households")
-    .select("id,name,owner_id,partner_id")
-    .or(`owner_id.eq.${user.id},partner_id.eq.${user.id}`)
+    .select("id,name,owner_id")
     .limit(1)
     .maybeSingle();
   if (error)
     throw new Error(
       "Não foi possível abrir o espaço do casal. Confira a configuração do banco.",
     );
-  return { user, household: data ? householdSchema.parse(data) : null };
+  if (!data) return { user, household: null };
+  const { data: count, error: countError } = await client.rpc(
+    "household_member_count",
+    { p_household_id: data.id },
+  );
+  if (countError)
+    throw new Error("Não foi possível carregar os participantes.");
+  return {
+    user,
+    household: householdSchema.parse({ ...data, member_count: count }),
+  };
 }
 export async function loadSnapshot(householdId: string): Promise<Snapshot> {
   const client = await createClient();

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getHousehold, loadSnapshot } from "@/lib/data";
 import { MAX_BACKUP_BYTES, parseState, type Snapshot } from "@/lib/finance";
 import { credentialsSchema, usernameToIdentity } from "@/lib/credentials";
+import { invitationToken } from "@/lib/invitation";
 
 type Result<T> =
   { ok: true; value: T } | { ok: false; error: string; conflict?: boolean };
@@ -75,6 +76,8 @@ export async function setupHousehold(
   value: string,
 ): Promise<Result<string>> {
   try {
+    if (mode !== "create" && mode !== "join")
+      return { ok: false, error: "Opção inválida." };
     const client = await createClient();
     const {
       data: { user },
@@ -86,18 +89,21 @@ export async function setupHousehold(
       (value.trim().length < 1 || value.trim().length > 80)
     )
       return { ok: false, error: "Use um nome com até 80 caracteres." };
-    if (mode === "join" && !/^[a-f0-9]{64}$/.test(value.trim()))
-      return { ok: false, error: "Cole o código completo do convite." };
+    const token = mode === "join" ? invitationToken(value) : null;
+    if (mode === "join" && !token)
+      return { ok: false, error: "Cole o link ou código completo do convite." };
     const { data, error } =
       mode === "create"
         ? await client.rpc("create_household", { p_name: value.trim() })
-        : await client.rpc("join_household", { p_token: value.trim() });
+        : await client.rpc("join_household", { p_token: token });
     return error
       ? {
           ok: false,
           error:
             mode === "join"
-              ? "Convite inválido, expirado ou já utilizado. Peça um novo código."
+              ? error.message.includes("outro espaço")
+                ? "Você já participa de outro espaço. Entre com uma conta que ainda não participa de um espaço."
+                : "Convite inválido ou expirado. Peça um novo link."
               : "Não foi possível criar o espaço. Confira se o banco está configurado ou se você já participa de um espaço.",
         }
       : { ok: true, value: String(data) };
@@ -117,7 +123,7 @@ export async function generateInvitation(): Promise<Result<string>> {
       ? {
           ok: false,
           error:
-            "Não foi possível gerar o convite. Apenas o criador de um espaço com vaga pode convidar.",
+            "Não foi possível gerar o convite. Entre no seu espaço e tente novamente.",
         }
       : { ok: true, value: String(data) };
   } catch {
@@ -125,7 +131,7 @@ export async function generateInvitation(): Promise<Result<string>> {
   }
 }
 export async function refreshFinance(): Promise<
-  Result<{ snapshot: Snapshot; partnered: boolean }>
+  Result<{ snapshot: Snapshot; memberCount: number }>
 > {
   try {
     const { household } = await getHousehold();
@@ -135,7 +141,7 @@ export async function refreshFinance(): Promise<
       ok: true,
       value: {
         snapshot: await loadSnapshot(household.id),
-        partnered: Boolean(household.partner_id),
+        memberCount: household.member_count,
       },
     };
   } catch (error) {

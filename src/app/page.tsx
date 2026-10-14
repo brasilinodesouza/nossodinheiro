@@ -23,7 +23,6 @@ export default async function Home() {
     <Dashboard
       initialSnapshot={snapshot}
       household={household}
-      userId={user.id}
       month={currentMonth()}
     />
   );

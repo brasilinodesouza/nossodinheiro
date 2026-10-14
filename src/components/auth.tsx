@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUpdateGuard } from "./app-runtime";
 import { ArrowRight, Heart, ShieldCheck, Wallet, Users } from "lucide-react";
 import { authenticate, setupHousehold, signOut } from "@/app/actions";
+import { invitationToken } from "@/lib/invitation";
 
 export function Brand() {
   return (
@@ -21,7 +22,13 @@ export function Brand() {
   );
 }
 
-export function AuthForm({ configured }: { configured: boolean }) {
+export function AuthForm({
+  configured,
+  invited = false,
+}: {
+  configured: boolean;
+  invited?: boolean;
+}) {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [username, setUsername] = useState("");
@@ -40,7 +47,7 @@ export function AuthForm({ configured }: { configured: boolean }) {
         setFailed(true);
         setMessage(result.error);
       } else if (result.value === "authenticated") {
-        router.replace("/");
+        router.replace(invited ? `/convite${window.location.hash}` : "/");
         router.refresh();
       } else {
         setFailed(false);
@@ -102,6 +109,13 @@ export function AuthForm({ configured }: { configured: boolean }) {
             <div className="notice">
               A conexão do app ainda precisa ser configurada. Você pode conhecer
               as telas com dados de exemplo abaixo.
+            </div>
+          )}
+          {invited && (
+            <div className="notice">
+              Você recebeu um convite para compartilhar um espaço financeiro.
+              Entre ou crie sua conta; depois, aceite o convite para visualizar
+              e editar os dados junto com os outros participantes.
             </div>
           )}
           <form onSubmit={submit}>
@@ -247,7 +261,7 @@ export function HouseholdSetup({ username }: { username: string }) {
         </div>
         <form onSubmit={submit}>
           <label>
-            {mode === "create" ? "Nome do espaço" : "Código do convite"}
+            {mode === "create" ? "Nome do espaço" : "Link ou código do convite"}
             <input
               value={value}
               onChange={(e) => {
@@ -255,10 +269,16 @@ export function HouseholdSetup({ username }: { username: string }) {
                 setValue(e.target.value);
               }}
               required
-              maxLength={mode === "create" ? 80 : 64}
+              maxLength={mode === "create" ? 80 : 2048}
               autoComplete="off"
             />
           </label>
+          {mode === "join" && (
+            <p>
+              Ao aceitar, você poderá visualizar, adicionar, editar e excluir
+              todos os registros financeiros deste espaço.
+            </p>
+          )}
           {error && (
             <p className="form-error" role="alert">
               {error}
@@ -269,10 +289,118 @@ export function HouseholdSetup({ username }: { username: string }) {
               ? "Aguarde…"
               : mode === "create"
                 ? "Criar nosso espaço"
-                : "Entrar no espaço"}
+                : "Aceitar convite e participar"}
             <ArrowRight size={17} />
           </button>
         </form>
+        <form action={signOut}>
+          <button className="text-link">Sair da conta</button>
+        </form>
+      </section>
+    </main>
+  );
+}
+
+function subscribeInvitationHash(callback: () => void) {
+  window.addEventListener("hashchange", callback);
+  return () => window.removeEventListener("hashchange", callback);
+}
+function readInvitationHash() {
+  return window.location.hash.slice(1);
+}
+function emptyInvitationHash() {
+  return "";
+}
+
+export function InvitationAcceptance({
+  currentSpace,
+}: {
+  currentSpace?: string;
+}) {
+  const router = useRouter();
+  const [draft, setDraft] = useState<string | null>(null);
+  const hash = useSyncExternalStore(
+    subscribeInvitationHash,
+    readInvitationHash,
+    emptyInvitationHash,
+  );
+  const value = draft ?? hash;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useUpdateGuard(busy || draft !== null);
+  async function accept(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!invitationToken(value)) {
+      setError("Cole um link ou código de convite válido.");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const result = await setupHousehold("join", value);
+      if (!result.ok) setError(result.error);
+      else {
+        router.replace("/");
+        router.refresh();
+      }
+    } catch {
+      setError("Não foi possível aceitar o convite. Tente novamente.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="auth-shell">
+      <section className="auth-card setup-card">
+        <Brand />
+        <h1>Um convite para participar</h1>
+        {currentSpace ? (
+          <>
+            <p>
+              Você já participa de <strong>{currentSpace}</strong>. Cada conta
+              participa de um espaço. Se este convite é para outro espaço,
+              abra-o com uma conta que ainda não participa.
+            </p>
+            <Link href="/" className="button primary full">
+              Abrir meu espaço <ArrowRight size={17} />
+            </Link>
+          </>
+        ) : (
+          <>
+            <p>
+              Ao aceitar, você terá acesso completo ao espaço: poderá
+              visualizar, adicionar, editar e excluir todos os registros
+              financeiros, importar e exportar backups e convidar outras
+              pessoas.
+            </p>
+            <form onSubmit={accept}>
+              <label>
+                Link ou código do convite
+                <textarea
+                  value={value}
+                  onChange={(e) => setDraft(e.target.value)}
+                  required
+                  maxLength={2048}
+                  rows={3}
+                  disabled={busy}
+                  autoComplete="off"
+                />
+              </label>
+              {error && (
+                <p className="form-error" role="alert">
+                  {error}
+                </p>
+              )}
+              <button className="button primary full" disabled={busy}>
+                {busy ? "Aguarde…" : "Aceitar convite e participar"}
+                <ArrowRight size={17} />
+              </button>
+            </form>
+            <Link href="/" className="text-link">
+              Voltar sem aceitar
+            </Link>
+          </>
+        )}
         <form action={signOut}>
           <button className="text-link">Sair da conta</button>
         </form>

@@ -13,9 +13,8 @@ export default function Demo() {
         id: "demo",
         name: "Nosso cantinho",
         owner_id: "demo",
-        partner_id: "demo-partner",
+        member_count: 2,
       }}
-      userId="demo"
     />
   );
 }

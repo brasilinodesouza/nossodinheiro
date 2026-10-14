@@ -26,6 +26,7 @@ import {
   Plus,
   RefreshCw,
   Settings,
+  Share2,
   ShieldCheck,
   Trash2,
   Upload,
@@ -35,6 +36,7 @@ import {
 } from "lucide-react";
 import { Brand } from "./auth";
 import { InstallButton, useUpdateGuard } from "./app-runtime";
+import { invitationLink } from "@/lib/invitation";
 import {
   generateInvitation,
   refreshFinance,
@@ -104,13 +106,11 @@ function download(state: FinanceState, pending = false) {
 export function Dashboard({
   initialSnapshot,
   household,
-  userId,
   month: initialMonth,
   demo = false,
 }: {
   initialSnapshot: Snapshot;
   household: Household;
-  userId: string;
   month: Month;
   demo?: boolean;
 }) {
@@ -125,7 +125,7 @@ export function Dashboard({
   const [error, setError] = useState("");
   const [pending, setPending] = useState<FinanceState | null>(null);
   const [conflict, setConflict] = useState(false);
-  const [partnered, setPartnered] = useState(Boolean(household.partner_id));
+  const [memberCount, setMemberCount] = useState(household.member_count);
   const [invitation, setInvitation] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   useUpdateGuard(Boolean(editor) || busy || Boolean(pending));
@@ -200,7 +200,7 @@ export function Dashboard({
         return;
       }
       setSnapshot(result.value.snapshot);
-      setPartnered(result.value.partnered);
+      setMemberCount(result.value.memberCount);
       setPending(null);
       setConflict(false);
       setEditor(null);
@@ -306,10 +306,11 @@ export function Dashboard({
     busyRef.current = true;
     setBusy(true);
     setError("");
+    setMessage("");
     try {
       const result = await generateInvitation();
       if (!result.ok) setError(result.error);
-      else setInvitation(result.value);
+      else setInvitation(invitationLink(window.location.origin, result.value));
     } catch {
       setError("Não foi possível gerar o convite. Tente novamente.");
     } finally {
@@ -320,11 +321,22 @@ export function Dashboard({
   async function copyInvite() {
     try {
       await navigator.clipboard.writeText(invitation);
-      setMessage(
-        "Convite copiado. Compartilhe o código com sua esposa ou seu marido.",
-      );
+      setMessage("Link copiado. Envie para quem vai participar do espaço.");
     } catch {
-      setError("Selecione e copie o código abaixo.");
+      setError("Selecione e copie o link abaixo.");
+    }
+  }
+  async function shareInvite() {
+    if (!navigator.share) return copyInvite();
+    try {
+      await navigator.share({
+        title: "Convite para o Nosso Dinheiro",
+        text: "Participe do nosso espaço financeiro. Todos os participantes podem visualizar e editar os dados.",
+        url: invitation,
+      });
+    } catch (error) {
+      if (!(error instanceof Error && error.name === "AbortError"))
+        setError("Não foi possível compartilhar. Use Copiar link.");
     }
   }
   const period = `${MONTHS[month.month]} de ${month.year}`;
@@ -349,6 +361,15 @@ export function Dashboard({
             <Heart size={14} />
             {household.name}
           </span>
+          <button
+            className="icon-button"
+            aria-label="Convidar parceiro(a)"
+            title="Convidar parceiro(a)"
+            onClick={() => openEditor({ type: "settings" })}
+            disabled={busy || Boolean(pending)}
+          >
+            <Users size={20} />
+          </button>
           <button
             className="icon-button"
             aria-label="Atualizar dados"
@@ -465,7 +486,7 @@ export function Dashboard({
               ? "Conectando…"
               : pending
                 ? "Há alterações pendentes"
-                : `Dados carregados · ${partnered ? "espaço compartilhado" : "convide sua outra metade"}`}
+                : `Dados carregados · ${memberCount > 1 ? `${memberCount} pessoas no espaço` : "convide seu parceiro ou parceira"}`}
           <span className="sync-period">
             {tab === "savings" ? "Saldo real · independente do mês" : period}
           </span>
@@ -1099,52 +1120,66 @@ export function Dashboard({
                   <p>
                     {demo
                       ? "Demonstração com dados de exemplo"
-                      : partnered
-                        ? "Vocês dois compartilham este espaço."
-                        : "Seu espaço está esperando a outra pessoa."}
+                      : `${memberCount} ${memberCount === 1 ? "pessoa participa" : "pessoas participam"} deste espaço. Todos podem visualizar e editar os dados financeiros.`}
                   </p>
                 </div>
               </div>
-              {!demo && !partnered && household.owner_id === userId && (
-                <section className="settings-section">
-                  <h3>Convide sua outra metade</h3>
-                  <p>
-                    A outra pessoa cria uma conta própria e escolhe “Tenho um
-                    convite”. O código vale por 7 dias e pode ser usado uma vez.
-                  </p>
-                  <button
-                    className="button secondary full"
-                    disabled={busy}
-                    onClick={invite}
-                  >
-                    <Heart size={16} />
-                    {invitation
-                      ? "Gerar um novo código"
-                      : "Gerar código de convite"}
-                  </button>
-                  {invitation && (
-                    <>
-                      <label>
-                        Código do convite
-                        <textarea
-                          readOnly
-                          value={invitation}
-                          onFocus={(e) => e.target.select()}
-                          rows={3}
-                        />
-                      </label>
-                      <button
-                        className="button secondary full"
-                        onClick={copyInvite}
-                      >
-                        <Copy size={16} />
-                        Copiar convite
-                      </button>
-                      <small>Gerar outro código invalida o anterior.</small>
-                    </>
-                  )}
-                </section>
-              )}
+              <section className="settings-section">
+                <h3>Convidar parceiro(a)</h3>
+                <p>
+                  Envie o link para as pessoas que vão participar. Elas entram
+                  ou criam uma conta com usuário e senha e aceitam o convite.
+                  Todos podem visualizar, adicionar, editar e excluir os
+                  registros financeiros, além de convidar outras pessoas.
+                </p>
+                <p>
+                  O link vale por 7 dias e aceita várias pessoas. Gerar outro
+                  link invalida o anterior.
+                </p>
+                {demo && (
+                  <p>Crie sua conta para gerar um convite de verdade.</p>
+                )}
+                <button
+                  className="button secondary full"
+                  disabled={busy || demo}
+                  onClick={invite}
+                >
+                  <Heart size={16} />
+                  {invitation
+                    ? "Gerar novo link de convite"
+                    : "Gerar link de convite"}
+                </button>
+                {invitation && (
+                  <>
+                    <label>
+                      Link do convite
+                      <textarea
+                        readOnly
+                        value={invitation}
+                        onFocus={(e) => e.target.select()}
+                        rows={3}
+                      />
+                    </label>
+                    <button
+                      className="button secondary full"
+                      onClick={copyInvite}
+                    >
+                      <Copy size={16} />
+                      Copiar link
+                    </button>
+                    <button
+                      className="button secondary full"
+                      onClick={shareInvite}
+                    >
+                      <Share2 size={16} /> Compartilhar convite
+                    </button>
+                    <small>
+                      Compartilhe apenas com quem terá acesso completo aos
+                      dados.
+                    </small>
+                  </>
+                )}
+              </section>
               <section className="settings-section">
                 <h3>Seus dados, sempre com vocês</h3>
                 <p>

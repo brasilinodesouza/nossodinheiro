@@ -6,7 +6,8 @@ App de finanças para um casal, feito com Next.js, React, TypeScript e Supabase,
 
 - Interface para celular e computador, com navegação inferior no celular.
 - Conta individual com usuário e senha, sem solicitar endereço de e-mail ou enviar mensagens.
-- Espaço de duas pessoas: uma cria o espaço, a outra entra com um convite.
+- Espaço com vários participantes, todos com acesso completo aos dados financeiros.
+- Convite por link, com opção de copiar ou compartilhar pelo celular; entrada com usuário e senha.
 - Salários, descontos e comissões separados para cada pessoa e mês.
 - Custos fixos, variáveis e cartão de crédito; adicionar, editar e remover registros.
 - Visão geral da renda, gastos e saldo, com gráficos.
@@ -42,7 +43,11 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_SUA_CHAVE
 Nunca use `service_role` ou uma secret key nessas variáveis públicas. O app usa autenticação e políticas RLS para proteger os dados.
 
 4. Em **Authentication → Sign In / Providers**, mantenha o provedor **Email** habilitado e desative **Confirm email**. O usuário escolhe apenas um nome e uma senha; não existe confirmação por mensagem. A mesma configuração está em `supabase/config.toml` para desenvolvimento local. Não configure SMTP.
-5. Reinicie o app depois de alterar `.env.local`. Escolha **Criar conta**, defina um usuário com 3 a 32 caracteres e uma senha com 8 a 128 caracteres e crie o espaço. Nas configurações do app, gere o convite. Sua esposa cria a própria conta, escolhe **Tenho um convite** e cola o código. O convite expira em 7 dias, é válido uma vez e é invalidado quando outro código é gerado.
+5. Reinicie o app depois de alterar `.env.local`. Escolha **Criar conta**, defina um usuário com 3 a 32 caracteres e uma senha com 8 a 128 caracteres e crie o espaço. Abra **Convidar parceiro(a)** no topo ou nas configurações, gere o link e copie ou compartilhe. A pessoa abre o link, entra ou cria sua própria conta e toca em **Aceitar convite e participar**. Também pode colar o link ou código em **Tenho um convite**.
+
+O link expira em 7 dias e pode ser aceito por várias pessoas; gerar outro invalida o anterior. Todos os participantes podem adicionar, editar e excluir qualquer registro financeiro, importar/exportar backups e gerar convites. Não há papel somente leitura. Cada usuário participa de um espaço; aceitar um convite não move nem substitui dados de um espaço existente. A contagem de participantes é atualizada ao abrir o app ou tocar em **Atualizar dados**. Os valores de renda continuam organizados nas duas pessoas do modelo original; os participantes adicionais colaboram sobre esses mesmos dados.
+
+O token do link fica no fragmento (`/convite#...`), que não é enviado nos pedidos HTTP nem nos cabeçalhos de referência. O banco guarda somente seu hash. A nova migração transforma o criador e o parceiro dos espaços existentes em membros e preserva o documento financeiro. `household_members` controla o acesso por UUID autenticado; as políticas RLS permitem que os membros leiam e alterem o documento inteiro e bloqueiam quem não participa.
 
 Nomes de usuário são normalizados para minúsculas e aceitam letras ASCII, números, ponto, hífen e sublinhado, começando com letra ou número. Internamente, o servidor transforma o nome em um identificador determinístico em hexadecimal no domínio reservado `usuarios.nossodinheiro.invalid`, porque o Supabase Auth exige um identificador em formato de e-mail para contas com senha. Esse domínio não possui caixa postal; o app não pede um endereço real. Cadastro e login usam exatamente a mesma transformação. O Supabase continua armazenando o hash da senha e emitindo sessões; as políticas RLS usam o UUID autenticado, nunca o nome de usuário. Não altere esse mapeamento depois de cadastrar contas sem planejar uma migração.
 
@@ -88,7 +93,7 @@ Salários e gastos fixos são sugeridos a partir do mês anterior. As descriçõ
 
 O botão **Atualizar dados** lê as alterações do outro dispositivo. Ao salvar, o banco compara a versão carregada com a versão atual. Se outra pessoa já salvou, o aplicativo interrompe a gravação, mantém a alteração pendente na sessão e oferece exportação e atualização. Ele não combina alterações conflitantes automaticamente. Não feche a tela antes de exportar ou salvar alterações pendentes.
 
-O armazenamento usa um documento financeiro por casal, para preservar a compatibilidade com o backup original. Convites ficam armazenados somente como hash. As funções privilegiadas de criação e entrada ficam no schema `private`; as funções públicas usam `SECURITY INVOKER`. Ambos os membros podem editar os dados compartilhados; outros usuários não podem ler ou alterar esse espaço. Não exponha o schema `private` na Data API.
+O armazenamento usa um documento financeiro por espaço, para preservar a compatibilidade com o backup original. Convites ficam armazenados somente como hash. As funções privilegiadas de criação e entrada ficam no schema `private`; as funções públicas usam `SECURITY INVOKER`. Todos os membros podem editar os dados compartilhados; outros usuários não podem ler ou alterar esse espaço. Não exponha o schema `private` na Data API. A coluna legada `partner_id` é mantida para compatibilidade com versões anteriores; novas permissões usam `household_members`.
 
 ## Verificações
 
@@ -99,7 +104,7 @@ npm test
 npm run build
 ```
 
-Os testes financeiros verificam centavos, salários/comissões, troca de mês, poupança e compatibilidade de backup. Os testes de banco executam o SQL real em PostgreSQL local em memória (PGlite), verificando políticas RLS, isolamento entre casais, convites, validade, uso único e bloqueio de versões antigas.
+Os testes financeiros verificam centavos, salários/comissões, troca de mês, poupança e compatibilidade de backup. Os testes de banco executam as migrações reais em PostgreSQL local em memória (PGlite), verificando preservação de espaços existentes, políticas RLS, isolamento entre espaços, convites reutilizáveis, expiração, rotação, acesso completo do terceiro participante e bloqueio de versões antigas.
 
 Os testes de autenticação verificam normalização de usuário, limites, rejeição de endereços pessoais, mapeamento sem colisões e validação da operação no servidor. A validação local não substitui testar cadastro, entrada e compartilhamento em duas contas reais no projeto Supabase escolhido.
 
