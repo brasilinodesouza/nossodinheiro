@@ -5,7 +5,7 @@ App de finanças para um casal, feito com Next.js, React, TypeScript e Supabase,
 ## O que já funciona
 
 - Interface para celular e computador, com navegação inferior no celular.
-- Conta individual com e-mail e senha, confirmação por e-mail e recuperação de senha.
+- Conta individual com usuário e senha, sem solicitar endereço de e-mail ou enviar mensagens.
 - Espaço de duas pessoas: uma cria o espaço, a outra entra com um convite.
 - Salários, descontos e comissões separados para cada pessoa e mês.
 - Custos fixos, variáveis e cartão de crédito; adicionar, editar e remover registros.
@@ -41,44 +41,19 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_SUA_CHAVE
 
 Nunca use `service_role` ou uma secret key nessas variáveis públicas. O app usa autenticação e políticas RLS para proteger os dados.
 
-4. Em **Authentication → Providers**, habilite Email e mantenha a confirmação de e-mail ativa.
-5. Em **Authentication → URL Configuration**, coloque seu domínio da Vercel como **Site URL**. Cadastre as URLs de redirecionamento de produção e desenvolvimento, por exemplo:
+4. Em **Authentication → Sign In / Providers**, mantenha o provedor **Email** habilitado e desative **Confirm email**. O usuário escolhe apenas um nome e uma senha; não existe confirmação por mensagem. A mesma configuração está em `supabase/config.toml` para desenvolvimento local. Não configure SMTP.
+5. Reinicie o app depois de alterar `.env.local`. Escolha **Criar conta**, defina um usuário com 3 a 32 caracteres e uma senha com 8 a 128 caracteres e crie o espaço. Nas configurações do app, gere o convite. Sua esposa cria a própria conta, escolhe **Tenho um convite** e cola o código. O convite expira em 7 dias, é válido uma vez e é invalidado quando outro código é gerado.
 
-```text
-http://localhost:3000/auth/callback
-http://localhost:3000/auth/callback?next=/recuperar
-https://SEU-APP.vercel.app/auth/callback
-https://SEU-APP.vercel.app/auth/callback?next=/recuperar
-```
+Nomes de usuário são normalizados para minúsculas e aceitam letras ASCII, números, ponto, hífen e sublinhado, começando com letra ou número. Internamente, o servidor transforma o nome em um identificador determinístico em hexadecimal no domínio reservado `usuarios.nossodinheiro.invalid`, porque o Supabase Auth exige um identificador em formato de e-mail para contas com senha. Esse domínio não possui caixa postal; o app não pede um endereço real. Cadastro e login usam exatamente a mesma transformação. O Supabase continua armazenando o hash da senha e emitindo sessões; as políticas RLS usam o UUID autenticado, nunca o nome de usuário. Não altere esse mapeamento depois de cadastrar contas sem planejar uma migração.
 
-6. Em **Authentication → Email Templates**, prefira os links com `token_hash` abaixo. Eles permitem confirmar o e-mail ou recuperar a senha mesmo abrindo o link em outro navegador. O painel atual do Supabase exige SMTP personalizado para editar os modelos; sem ele, usa os modelos padrão. Para testes locais, use `http://localhost:3000` como Site URL e depois troque para o domínio publicado.
-
-**Confirm signup:**
-
-```html
-<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email"
-  >Confirmar minha conta</a
->
-```
-
-**Reset password:**
-
-```html
-<a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery"
-  >Criar nova senha</a
->
-```
-
-7. Reinicie o app depois de alterar `.env.local`. Crie sua conta, confirme o e-mail e crie o espaço. Nas configurações do app, gere o convite. Sua esposa cria e confirma a própria conta, escolhe **Tenho um convite** e cola o código. O convite expira em 7 dias, é válido uma vez e é invalidado quando outro código é gerado.
-
-Se o Supabase limitar o envio de e-mails, aguarde ou configure seu SMTP na área de autenticação. Não desative a confirmação como solução de produção.
+A recuperação por e-mail foi removida. Esta versão não oferece recuperação automática de senha; guarde a senha no gerenciador do celular. As antigas rotas de confirmação e recuperação redirecionam ao login.
 
 ## Publicar na Vercel
 
 1. Coloque este projeto em um repositório GitHub e importe-o na [Vercel](https://vercel.com/new).
 2. Selecione o framework **Next.js**, o diretório raiz deste projeto e Node.js **22.x** ou superior.
 3. Adicione `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` em **Settings → Environment Variables**. A URL e a chave precisam pertencer ao mesmo projeto Supabase.
-4. A Vercel usa `npm run build`. Publique e ajuste as URLs e os modelos de e-mail no Supabase para o domínio final.
+4. A Vercel usa `npm run build`. Publique e mantenha o cadastro sem confirmação no Supabase.
 5. Se mudar as variáveis de ambiente, faça um novo deploy: as variáveis `NEXT_PUBLIC_` são incorporadas à compilação.
 
 O endereço permanente de produção é **https://nossodinheiro-xi.vercel.app**. O projeto Vercel está conectado a `brasilinodesouza/nossodinheiro`, com `main` como branch de produção e atribuição automática do domínio habilitada. Commits em `main` geram um novo deploy; outras branches geram previews. A versão precisa terminar o build e ficar Ready antes de chegar aos celulares. Não use a URL de um deploy específico para instalar: ela continua apontando para aquele deploy.
@@ -126,6 +101,6 @@ npm run build
 
 Os testes financeiros verificam centavos, salários/comissões, troca de mês, poupança e compatibilidade de backup. Os testes de banco executam o SQL real em PostgreSQL local em memória (PGlite), verificando políticas RLS, isolamento entre casais, convites, validade, uso único e bloqueio de versões antigas.
 
-A validação local não substitui testar cadastro, confirmação de e-mail, recuperação de senha e compartilhamento em duas contas reais no projeto Supabase escolhido. A configuração remota e a publicação ainda dependem desse projeto e da sua conta Vercel.
+Os testes de autenticação verificam normalização de usuário, limites, rejeição de endereços pessoais, mapeamento sem colisões e validação da operação no servidor. A validação local não substitui testar cadastro, entrada e compartilhamento em duas contas reais no projeto Supabase escolhido.
 
 Referências oficiais: [Next.js na Vercel](https://vercel.com/docs/frameworks/full-stack/nextjs), [Autenticação Supabase com Next.js](https://supabase.com/docs/guides/auth/server-side/creating-a-client?framework=nextjs), [Apps instaláveis com Next.js](https://nextjs.org/docs/app/guides/progressive-web-apps).

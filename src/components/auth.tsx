@@ -4,21 +4,8 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useUpdateGuard } from "./app-runtime";
-import {
-  ArrowRight,
-  Heart,
-  ShieldCheck,
-  Wallet,
-  Users,
-  Mail,
-} from "lucide-react";
-import {
-  authenticate,
-  requestPasswordReset,
-  resetPassword,
-  setupHousehold,
-  signOut,
-} from "@/app/actions";
+import { ArrowRight, Heart, ShieldCheck, Wallet, Users } from "lucide-react";
+import { authenticate, setupHousehold, signOut } from "@/app/actions";
 
 export function Brand() {
   return (
@@ -34,34 +21,21 @@ export function Brand() {
   );
 }
 
-export function AuthForm({
-  configured,
-  linkError = false,
-}: {
-  configured: boolean;
-  linkError?: boolean;
-}) {
+export function AuthForm({ configured }: { configured: boolean }) {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup" | "forgot">("login");
-  const [email, setEmail] = useState("");
+  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState(
-    linkError
-      ? "Este link expirou ou já foi utilizado. Entre na sua conta ou solicite outro e-mail."
-      : "",
-  );
-  const [failed, setFailed] = useState(linkError);
-  useUpdateGuard(busy || Boolean(email) || Boolean(password));
+  const [message, setMessage] = useState("");
+  const [failed, setFailed] = useState(false);
+  useUpdateGuard(busy || Boolean(username) || Boolean(password));
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
     try {
-      const result =
-        mode === "forgot"
-          ? await requestPasswordReset(email)
-          : await authenticate(mode, email, password);
+      const result = await authenticate(mode, username, password);
       if (!result.ok) {
         setFailed(true);
         setMessage(result.error);
@@ -117,18 +91,12 @@ export function AuthForm({
         <section className="auth-card">
           <span className="eyebrow">BEM-VINDOS AO NOSSO DINHEIRO</span>
           <h2>
-            {mode === "signup"
-              ? "Comecem por aqui"
-              : mode === "forgot"
-                ? "Recupere sua senha"
-                : "Seu cantinho financeiro"}
+            {mode === "signup" ? "Comecem por aqui" : "Seu cantinho financeiro"}
           </h2>
           <p>
             {mode === "signup"
-              ? "Crie sua conta e convide a pessoa que divide a vida com você."
-              : mode === "forgot"
-                ? "Enviaremos um link para o seu e-mail."
-                : "Entre para cuidar dos planos de vocês."}
+              ? "Escolha seu usuário e senha para começar. Depois, convide a pessoa que divide a vida com você."
+              : "Entre com seu usuário e senha para cuidar dos planos de vocês."}
           </p>
           {!configured && (
             <div className="notice">
@@ -138,35 +106,44 @@ export function AuthForm({
           )}
           <form onSubmit={submit}>
             <label>
-              E-mail
+              Usuário
               <input
-                autoComplete="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="voce@exemplo.com"
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Ex.: brasilino"
                 required
-                maxLength={254}
+                minLength={3}
+                maxLength={32}
+                pattern="[a-zA-Z0-9][a-zA-Z0-9._\-]*"
+                title="3 a 32 caracteres: letras sem acento, números, ponto, hífen ou sublinhado. Comece com letra ou número."
                 disabled={busy || !configured}
               />
             </label>
-            {mode !== "forgot" && (
-              <label>
-                Senha
-                <input
-                  type="password"
-                  autoComplete={
-                    mode === "signup" ? "new-password" : "current-password"
-                  }
-                  minLength={8}
-                  maxLength={128}
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Pelo menos 8 caracteres"
-                  disabled={busy || !configured}
-                />
-              </label>
+            <label>
+              Senha
+              <input
+                type="password"
+                autoComplete={
+                  mode === "signup" ? "new-password" : "current-password"
+                }
+                minLength={8}
+                maxLength={128}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Pelo menos 8 caracteres"
+                disabled={busy || !configured}
+              />
+            </label>
+            {mode === "signup" && (
+              <small className="privacy-note">
+                Use letras sem acento e números no usuário. Ponto, hífen e
+                sublinhado também são aceitos.
+              </small>
             )}
             {message && (
               <p
@@ -184,17 +161,10 @@ export function AuthForm({
                 ? "Aguarde…"
                 : mode === "signup"
                   ? "Criar minha conta"
-                  : mode === "forgot"
-                    ? "Enviar link"
-                    : "Entrar"}
+                  : "Entrar"}
               <ArrowRight size={17} />
             </button>
           </form>
-          {mode === "login" && (
-            <button className="text-link" onClick={() => changeMode("forgot")}>
-              Esqueci minha senha
-            </button>
-          )}
           <p className="auth-switch">
             {mode === "login"
               ? "Primeira vez por aqui? "
@@ -220,7 +190,7 @@ export function AuthForm({
   );
 }
 
-export function HouseholdSetup({ email }: { email: string }) {
+export function HouseholdSetup({ username }: { username: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<"create" | "join">("create");
   const [value, setValue] = useState("Nosso cantinho");
@@ -250,8 +220,8 @@ export function HouseholdSetup({ email }: { email: string }) {
         <Brand />
         <h1>Um espaço para vocês</h1>
         <p>
-          Você está conectado como {email}. Se a outra pessoa já criou o espaço,
-          entre com o convite dela.
+          Você está conectado como {username}. Se a outra pessoa já criou o
+          espaço, entre com o convite dela.
         </p>
         <div className="segmented">
           <button
@@ -306,81 +276,6 @@ export function HouseholdSetup({ email }: { email: string }) {
         <form action={signOut}>
           <button className="text-link">Sair da conta</button>
         </form>
-      </section>
-    </main>
-  );
-}
-
-export function PasswordRecovery() {
-  const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [success, setSuccess] = useState(false);
-  useUpdateGuard(busy || Boolean(password) || Boolean(confirm));
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (password !== confirm) {
-      setMessage("As senhas precisam ser iguais.");
-      return;
-    }
-    setBusy(true);
-    try {
-      const result = await resetPassword(password);
-      setSuccess(result.ok);
-      setMessage(result.ok ? result.value : result.error);
-    } catch {
-      setMessage("Não foi possível conectar. Tente novamente.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <main className="auth-shell">
-      <section className="auth-card">
-        <Mail className="gold" />
-        <h1>Uma nova senha</h1>
-        <p>Escolha uma senha com pelo menos 8 caracteres.</p>
-        <form onSubmit={submit}>
-          <label>
-            Nova senha
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              maxLength={128}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
-          <label>
-            Confirmar senha
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              maxLength={128}
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
-          </label>
-          {message && (
-            <p
-              className={success ? "form-success" : "form-error"}
-              role="status"
-            >
-              {message}
-            </p>
-          )}
-          <button disabled={busy || success} className="button primary full">
-            {busy ? "Aguarde…" : "Salvar nova senha"}
-          </button>
-        </form>
-        <Link className="text-link" href={success ? "/" : "/login"}>
-          {success ? "Abrir meu espaço" : "Voltar ao login"}
-        </Link>
       </section>
     </main>
   );

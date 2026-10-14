@@ -1,64 +1,58 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getHousehold, loadSnapshot } from "@/lib/data";
 import { MAX_BACKUP_BYTES, parseState, type Snapshot } from "@/lib/finance";
+import { credentialsSchema, usernameToIdentity } from "@/lib/credentials";
 
 type Result<T> =
   { ok: true; value: T } | { ok: false; error: string; conflict?: boolean };
-const credentialsSchema = z.object({
-  email: z.email().max(254),
-  password: z.string().min(8).max(128),
-});
 
 export async function authenticate(
   mode: "login" | "signup",
-  email: string,
+  username: string,
   password: string,
 ): Promise<Result<string>> {
-  const parsed = credentialsSchema.safeParse({ email: email.trim(), password });
+  const parsed = credentialsSchema.safeParse({ mode, username, password });
   if (!parsed.success)
     return {
       ok: false,
       error:
-        "Informe um e-mail válido e uma senha com pelo menos 8 caracteres.",
+        "Use um usuário com 3 a 32 caracteres (letras sem acento, números, ponto, hífen ou sublinhado), começando com letra ou número, e uma senha com pelo menos 8 caracteres.",
     };
   try {
     const client = await createClient();
-    if (mode === "signup") {
-      const origin = (await headers()).get("origin");
+    const credentials = {
+      email: usernameToIdentity(parsed.data.username),
+      password: parsed.data.password,
+    };
+    if (parsed.data.mode === "signup") {
       const { data, error } = await client.auth.signUp({
-        ...parsed.data,
-        options: origin
-          ? { emailRedirectTo: `${origin}/auth/callback` }
-          : undefined,
+        ...credentials,
       });
       if (error)
         return {
           ok: false,
           error:
-            error.code === "over_email_send_rate_limit"
-              ? "Aguarde alguns minutos antes de solicitar outro e-mail."
+            error.code === "user_already_exists"
+              ? "Esse usuário já está em uso. Escolha outro nome ou entre na sua conta."
               : "Não foi possível criar a conta. Confira os dados e tente novamente.",
         };
-      return {
-        ok: true,
-        value: data.session
-          ? "authenticated"
-          : "Confira seu e-mail e confirme a conta antes de entrar.",
-      };
+      return data.session
+        ? { ok: true, value: "authenticated" }
+        : {
+            ok: false,
+            error:
+              "O cadastro ainda precisa ser configurado. Tente novamente mais tarde.",
+          };
     }
-    const { error } = await client.auth.signInWithPassword(parsed.data);
+    const { error } = await client.auth.signInWithPassword(credentials);
     return error
       ? {
           ok: false,
-          error:
-            error.code === "email_not_confirmed"
-              ? "Confirme sua conta pelo e-mail recebido antes de entrar."
-              : "E-mail ou senha incorretos. Tente novamente.",
+          error: "Usuário ou senha incorretos. Tente novamente.",
         }
       : { ok: true, value: "authenticated" };
   } catch {
@@ -70,62 +64,6 @@ export async function authenticate(
   }
 }
 
-export async function requestPasswordReset(
-  email: string,
-): Promise<Result<string>> {
-  if (!z.email().safeParse(email.trim()).success)
-    return { ok: false, error: "Informe um e-mail válido." };
-  try {
-    const origin = (await headers()).get("origin");
-    if (!origin)
-      return {
-        ok: false,
-        error: "Abra o app pelo navegador para recuperar sua senha.",
-      };
-    const client = await createClient();
-    const { error } = await client.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${origin}/auth/callback?next=/recuperar`,
-    });
-    return error
-      ? {
-          ok: false,
-          error:
-            "Não foi possível solicitar o e-mail. Aguarde e tente novamente.",
-        }
-      : {
-          ok: true,
-          value:
-            "Se houver uma conta com esse e-mail, você receberá um link para criar uma nova senha.",
-        };
-  } catch {
-    return { ok: false, error: "Não foi possível conectar. Tente novamente." };
-  }
-}
-export async function resetPassword(password: string): Promise<Result<string>> {
-  if (password.length < 8 || password.length > 128)
-    return { ok: false, error: "Use uma senha com 8 a 128 caracteres." };
-  try {
-    const client = await createClient();
-    const {
-      data: { user },
-    } = await client.auth.getUser();
-    if (!user)
-      return {
-        ok: false,
-        error: "O link expirou. Solicite um novo e-mail de recuperação.",
-      };
-    const { error } = await client.auth.updateUser({ password });
-    return error
-      ? {
-          ok: false,
-          error:
-            "Não foi possível atualizar. Escolha uma senha diferente e tente novamente.",
-        }
-      : { ok: true, value: "Senha atualizada. Você já pode abrir o app." };
-  } catch {
-    return { ok: false, error: "Não foi possível conectar. Tente novamente." };
-  }
-}
 export async function signOut() {
   const client = await createClient();
   const { error } = await client.auth.signOut();

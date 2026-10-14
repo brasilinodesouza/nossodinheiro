@@ -5,6 +5,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { getHousehold, loadSnapshot } from "@/lib/data";
 import { currentMonth } from "@/lib/finance";
+import { identityToUsername } from "@/lib/credentials";
 
 export const dynamic = "force-dynamic";
 export default async function Home() {
@@ -15,7 +16,8 @@ export default async function Home() {
   } = await client.auth.getUser();
   if (!user) redirect("/login");
   const { household } = await getHousehold();
-  if (!household) return <HouseholdSetup email={user.email ?? ""} />;
+  if (!household)
+    return <HouseholdSetup username={identityToUsername(user.email)} />;
   const snapshot = await loadSnapshot(household.id);
   return (
     <Dashboard
