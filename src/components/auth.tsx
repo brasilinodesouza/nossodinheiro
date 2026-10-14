@@ -127,6 +127,7 @@ export function AuthForm({
                 spellCheck={false}
                 type="text"
                 value={username}
+                placeholder="Digite seu login"
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 minLength={3}
