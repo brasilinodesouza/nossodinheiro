@@ -11,6 +11,23 @@ import {
   total,
 } from "../src/lib/finance";
 
+test("backup legado ignora somente listas mensais de poupança vazias e preserva os objetivos", () => {
+  const goals = [{ id: 1, name: "Reserva", amount: 200, goal: 1000 }];
+  assert.deepEqual(
+    parseState({
+      fin_2026_4_poupanca: [],
+      fin_2026_5_poupanca: "[]",
+      fin_poupanca_objetivos: goals,
+    }),
+    { fin_poupanca_objetivos: [{ ...goals[0], id: "1" }] },
+  );
+  assert.throws(
+    () => parseState({ fin_2026_4_poupanca: goals }),
+    /poupança mensal antiga/,
+  );
+  assert.throws(() => parseState({ fin_2026_12_poupanca: [] }), /desconhecido/);
+});
+
 test("valores monetários são somados em centavos", () => {
   assert.equal(
     total([

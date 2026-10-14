@@ -131,7 +131,7 @@ export async function generateInvitation(): Promise<Result<string>> {
   }
 }
 export async function refreshFinance(): Promise<
-  Result<{ snapshot: Snapshot; memberCount: number }>
+  Result<{ snapshot: Snapshot; memberCount: number; householdId: string }>
 > {
   try {
     const { household } = await getHousehold();
@@ -142,6 +142,7 @@ export async function refreshFinance(): Promise<
       value: {
         snapshot: await loadSnapshot(household.id),
         memberCount: household.member_count,
+        householdId: household.id,
       },
     };
   } catch (error) {
@@ -155,6 +156,7 @@ export async function refreshFinance(): Promise<
 export async function saveFinance(
   input: unknown,
   version: number,
+  householdId: string,
 ): Promise<Result<Snapshot>> {
   try {
     if (!Number.isSafeInteger(version) || version < 0)
@@ -165,6 +167,12 @@ export async function saveFinance(
     const { household } = await getHousehold();
     if (!household)
       return { ok: false, error: "Seu espaço não foi encontrado." };
+    if (household.id !== householdId)
+      return {
+        ok: false,
+        error:
+          "Seu espaço mudou. Exporte as alterações pendentes e abra o app novamente antes de salvar.",
+      };
     const client = await createClient();
     const { data, error } = await client.rpc("save_finance_state", {
       p_household_id: household.id,

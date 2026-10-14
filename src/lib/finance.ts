@@ -59,7 +59,7 @@ export function parseState(input: unknown): FinanceState {
   const result: FinanceState = {};
   for (const [key, raw] of Object.entries(object)) {
     const match =
-      /^fin_(\d{4})_(\d{1,2})_(salary|fixos|variaveis|cartao|comm_p1|comm_p2)$/.exec(
+      /^fin_(\d{4})_(\d{1,2})_(salary|fixos|variaveis|cartao|comm_p1|comm_p2|poupanca)$/.exec(
         key,
       );
     if (
@@ -72,6 +72,14 @@ export function parseState(input: unknown): FinanceState {
       throw new Error(`Registro desconhecido no backup: ${key.slice(0, 80)}`);
     }
     const value = typeof raw === "string" ? JSON.parse(raw) : raw;
+    if (match?.[3] === "poupanca") {
+      // The original app left obsolete empty monthly savings lists in backups.
+      // The real goals live in fin_poupanca_objetivos; don't discard filled lists.
+      if (Array.isArray(value) && value.length === 0) continue;
+      throw new Error(
+        "O backup contém poupança mensal antiga com registros. Converta esses registros em objetivos antes de importar.",
+      );
+    }
     result[key] =
       match?.[3] === "salary"
         ? salarySchema.parse(value)

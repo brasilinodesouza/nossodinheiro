@@ -35,6 +35,7 @@ import {
 import { Brand } from "./auth";
 import { InstallButton, useUpdateGuard } from "./app-runtime";
 import { invitationLink } from "@/lib/invitation";
+import { syncDecision, syncSignal } from "@/lib/sync";
 import {
   generateInvitation,
   refreshFinance,
@@ -123,6 +124,7 @@ export function Dashboard({
   const [conflict, setConflict] = useState(false);
   const [memberCount, setMemberCount] = useState(household.member_count);
   const [invitation, setInvitation] = useState("");
+  const [syncNotice, setSyncNotice] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
   useUpdateGuard(Boolean(editor) || busy || Boolean(pending));
   const state = snapshot.state,
@@ -133,6 +135,87 @@ export function Dashboard({
     window.scrollTo({ top: 0 });
   }, [tab]);
 
+  useEffect(() => {
+    let stopped = false;
+    let checking = false;
+    const controller = new AbortController();
+    async function checkData() {
+      if (
+        checking ||
+        document.visibilityState !== "visible" ||
+        !navigator.onLine
+      )
+        return;
+      checking = true;
+      try {
+        const response = await fetch("/api/sync", {
+          cache: "no-store",
+          credentials: "same-origin",
+          signal: AbortSignal.any([
+            controller.signal,
+            AbortSignal.timeout(10_000),
+          ]),
+        });
+        if (
+          stopped ||
+          !response.headers.get("content-type")?.includes("application/json")
+        )
+          return;
+        const signal = syncSignal(response.status, await response.json());
+        if (!signal || stopped) return;
+        const decision = syncDecision(
+          signal,
+          household.id,
+          snapshot.version,
+          memberCount,
+          busyRef.current || Boolean(editor) || Boolean(pending),
+        );
+        if (decision === "wait") {
+          setSyncNotice(
+            signal.status === "current"
+              ? "Há dados novos no espaço. Eles serão carregados quando você terminar de editar ou salvar."
+              : "Sua sessão ou espaço mudou. Exporte as alterações pendentes antes de entrar novamente.",
+          );
+          return;
+        }
+        if (decision === "login" || decision === "setup") {
+          window.location.replace(decision === "login" ? "/login" : "/");
+          return;
+        }
+        if (decision === "refresh") {
+          const result = await refreshFinance();
+          if (!stopped && !busyRef.current && result.ok) {
+            if (result.value.householdId !== household.id) {
+              window.location.replace("/");
+              return;
+            }
+            setSnapshot(result.value.snapshot);
+            setMemberCount(result.value.memberCount);
+            setMessage("Dados sincronizados com o espaço de vocês.");
+          }
+        }
+        if (!stopped) setSyncNotice("");
+      } catch {
+        // A network outage must never clear data, drafts, or an authenticated page.
+      } finally {
+        checking = false;
+      }
+    }
+    const interval = setInterval(() => void checkData(), 15_000);
+    document.addEventListener("visibilitychange", checkData);
+    window.addEventListener("focus", checkData);
+    window.addEventListener("online", checkData);
+    void checkData();
+    return () => {
+      stopped = true;
+      controller.abort();
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", checkData);
+      window.removeEventListener("focus", checkData);
+      window.removeEventListener("online", checkData);
+    };
+  }, [editor, pending, snapshot.version, memberCount, household.id]);
+
   async function save(candidate: FinanceState) {
     if (busyRef.current || conflict) return false;
     busyRef.current = true;
@@ -141,7 +224,11 @@ export function Dashboard({
     setMessage("");
     setPending(candidate);
     try {
-      const result = await saveFinance(candidate, snapshot.version);
+      const result = await saveFinance(
+        candidate,
+        snapshot.version,
+        household.id,
+      );
       if (!result.ok) {
         setError(result.error);
         setConflict(Boolean(result.conflict));
@@ -178,6 +265,10 @@ export function Dashboard({
       const result = await refreshFinance();
       if (!result.ok) {
         setError(result.error);
+        return;
+      }
+      if (result.value.householdId !== household.id) {
+        window.location.replace("/");
         return;
       }
       setSnapshot(result.value.snapshot);
@@ -459,6 +550,11 @@ export function Dashboard({
             {tab === "savings" ? "Saldo real · independente do mês" : period}
           </span>
         </div>
+        {syncNotice && (
+          <p className="feedback" role="status">
+            {syncNotice}
+          </p>
+        )}
         {error && (
           <div className="notice error" role="alert">
             {error}

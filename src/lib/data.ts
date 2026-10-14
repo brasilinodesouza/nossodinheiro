@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { parseState, type Snapshot } from "@/lib/finance";
 
@@ -17,6 +18,11 @@ export async function getHousehold() {
   } = await client.auth.getUser();
   if (authError || !user)
     throw new Error("Sua sessão expirou. Entre novamente.");
+  return getHouseholdForUser(client, user);
+}
+
+// Call only after validating this user with auth.getUser() on the server.
+export async function getHouseholdForUser(client: SupabaseClient, user: User) {
   const { data, error } = await client
     .from("households")
     .select("id,name,owner_id")
