@@ -81,7 +81,7 @@ Se o Supabase limitar o envio de e-mails, aguarde ou configure seu SMTP na área
 4. A Vercel usa `npm run build`. Publique e ajuste as URLs e os modelos de e-mail no Supabase para o domínio final.
 5. Se mudar as variáveis de ambiente, faça um novo deploy: as variáveis `NEXT_PUBLIC_` são incorporadas à compilação.
 
-O endereço permanente de produção é **https://nossodinheiro-xi.vercel.app**. A conexão com `brasilinodesouza/nossodinheiro` deve usar `main` como branch de produção. Commits em `main` geram um novo deploy; outras branches geram previews. A versão precisa terminar o build e ficar Ready antes de chegar aos celulares. Não use a URL de um deploy específico para instalar: ela continua apontando para aquele deploy.
+O endereço permanente de produção é **https://nossodinheiro-xi.vercel.app**. O projeto Vercel está conectado a `brasilinodesouza/nossodinheiro`, com `main` como branch de produção e atribuição automática do domínio habilitada. Commits em `main` geram um novo deploy; outras branches geram previews. A versão precisa terminar o build e ficar Ready antes de chegar aos celulares. Não use a URL de um deploy específico para instalar: ela continua apontando para aquele deploy.
 
 ## Usar no smartphone
 
