@@ -33,6 +33,7 @@
     "globals": "17.13.0",
     "prettier": "3.9.10",
     "sharp": "0.35.5",
+    "supabase": "2.121.0",
     "tsx": "4.23.15",
     "typescript": "6.0.3",
     "typescript-eslint": "8.71.2"

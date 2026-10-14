@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useUpdateGuard } from "./app-runtime";
 import {
   ArrowRight,
   Heart,
@@ -51,6 +52,7 @@ export function AuthForm({
       : "",
   );
   const [failed, setFailed] = useState(linkError);
+  useUpdateGuard(busy || Boolean(email) || Boolean(password));
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -222,8 +224,10 @@ export function HouseholdSetup({ email }: { email: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<"create" | "join">("create");
   const [value, setValue] = useState("Nosso cantinho");
+  const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  useUpdateGuard(busy || editing);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
@@ -276,7 +280,10 @@ export function HouseholdSetup({ email }: { email: string }) {
             {mode === "create" ? "Nome do espaço" : "Código do convite"}
             <input
               value={value}
-              onChange={(e) => setValue(e.target.value)}
+              onChange={(e) => {
+                setEditing(true);
+                setValue(e.target.value);
+              }}
               required
               maxLength={mode === "create" ? 80 : 64}
               autoComplete="off"
@@ -310,6 +317,7 @@ export function PasswordRecovery() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  useUpdateGuard(busy || Boolean(password) || Boolean(confirm));
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (password !== confirm) {

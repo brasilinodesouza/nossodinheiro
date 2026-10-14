@@ -14,6 +14,8 @@ App de finanças para um casal, feito com Next.js, React, TypeScript e Supabase,
 - Exportação e importação dos backups JSON do app original.
 - Proteção contra sobrescrever uma versão mais recente dos dados do outro celular.
 - Manifesto e ícones para adicionar o app à tela inicial do smartphone.
+- Convite de instalação no Android e orientação de instalação no iPhone/iPad.
+- Detecção automática de novas versões, com proteção de formulários e alterações pendentes.
 
 ## Experimentar no computador
 
@@ -28,8 +30,8 @@ Abra http://localhost:3000/demo para experimentar com dados fictícios. As alter
 
 ## Conectar ao Supabase
 
-1. Escolha um projeto **dedicado a este app** no [Supabase](https://supabase.com/dashboard). O banco remoto ainda não foi configurado. Não execute o esquema em um projeto de outro aplicativo.
-2. No SQL Editor, execute **uma única vez** o conteúdo de `supabase/schema.sql`. Ele cria tabelas, políticas de acesso e funções. Não é um script para repetir ou para apagar dados existentes.
+1. O projeto deste app é [nossodinheiro — bsidllisvxsyznoprwan](https://supabase.com/dashboard/project/bsidllisvxsyznoprwan). As tabelas, funções e políticas foram configuradas nesse projeto.
+2. **Não execute o esquema novamente nesse projeto.** O histórico inicial está em `supabase/migrations`. `supabase/schema.sql` é uma referência para criar um banco novo e vazio. Mudanças futuras no banco devem usar novas migrações.
 3. Copie `.env.example` para `.env.local` e preencha as duas variáveis com a URL do projeto e a chave **publishable** da tela Connect / API Keys:
 
 ```dotenv
@@ -49,7 +51,7 @@ https://SEU-APP.vercel.app/auth/callback
 https://SEU-APP.vercel.app/auth/callback?next=/recuperar
 ```
 
-6. Em **Authentication → Email Templates**, prefira os links com `token_hash` abaixo. Eles permitem confirmar o e-mail ou recuperar a senha mesmo abrindo o link em outro navegador. Para testes locais, use `http://localhost:3000` como Site URL e depois troque para o domínio publicado.
+6. Em **Authentication → Email Templates**, prefira os links com `token_hash` abaixo. Eles permitem confirmar o e-mail ou recuperar a senha mesmo abrindo o link em outro navegador. O painel atual do Supabase exige SMTP personalizado para editar os modelos; sem ele, usa os modelos padrão. Para testes locais, use `http://localhost:3000` como Site URL e depois troque para o domínio publicado.
 
 **Confirm signup:**
 
@@ -79,13 +81,25 @@ Se o Supabase limitar o envio de e-mails, aguarde ou configure seu SMTP na área
 4. A Vercel usa `npm run build`. Publique e ajuste as URLs e os modelos de e-mail no Supabase para o domínio final.
 5. Se mudar as variáveis de ambiente, faça um novo deploy: as variáveis `NEXT_PUBLIC_` são incorporadas à compilação.
 
-O aplicativo não foi publicado automaticamente. Não é necessário usar outro serviço de hospedagem.
+O endereço permanente de produção é **https://nossodinheiro-xi.vercel.app**. A conexão com `brasilinodesouza/nossodinheiro` deve usar `main` como branch de produção. Commits em `main` geram um novo deploy; outras branches geram previews. A versão precisa terminar o build e ficar Ready antes de chegar aos celulares. Não use a URL de um deploy específico para instalar: ela continua apontando para aquele deploy.
 
 ## Usar no smartphone
 
-Abra a URL publicada com HTTPS. No Android, use o menu do Chrome → **Instalar app** ou **Adicionar à tela inicial**. No iPhone, use Compartilhar no Safari → **Adicionar à Tela de Início**.
+Abra **https://nossodinheiro-xi.vercel.app** com HTTPS. Ao abrir no celular pelo navegador, aparece um convite de instalação. Ele deixa de aparecer dentro do app instalado; fechar o convite o oculta durante a sessão do navegador. Também existe o botão **Instalar no celular** nas configurações.
+
+No Android/Chrome, o botão abre a instalação nativa quando o navegador oferece `beforeinstallprompt`. Esse pedido exige um toque do usuário; o site não pode forçar a janela nativa ao carregar. Caso o navegador ainda não libere o pedido, o app mostra como usar **Instalar app** ou **Adicionar à tela inicial** no menu.
+
+No iPhone/iPad, o app mostra o passo a passo do Safari: **Compartilhar → Adicionar à Tela de Início → Adicionar**. Mantenha **Abrir como App Web** ligado se essa opção aparecer. O iOS não permite ao site abrir automaticamente a janela nativa de instalação.
 
 É um app web instalável, sem necessidade de loja de aplicativos. Os dados financeiros exigem internet. Não existe cache offline de dados ou telas autenticadas. O comportamento de instalação pode variar por navegador.
+
+## Atualizações automáticas dos celulares
+
+O app consulta `/api/version` ao abrir, ao voltar à tela, ao recuperar a conexão e a cada 60 segundos enquanto estiver visível. A versão usa o identificador do commit fornecido pela Vercel. Quando encontra um deploy novo, o app recarrega automaticamente. Se houver um formulário aberto, um salvamento em andamento ou alterações pendentes, ele espera você terminar, salvar ou exportar/descartar essas alterações. A consulta de versão ignora caches; falhas de conexão não provocam recargas.
+
+Um service worker recebe as navegações pela rede e mostra uma tela de reconexão quando ela falha. Ele não grava dados, sessões, APIs ou páginas financeiras em cache. O app fechado recebe a versão nova quando for aberto novamente com internet. Não há instalação silenciosa de APK ou atualização de aplicativo nativo por loja.
+
+Os dados continuam no mesmo projeto Supabase. Um commit de interface não modifica as tabelas automaticamente. Para mudanças de esquema, crie e aplique uma nova migração antes de disponibilizar a funcionalidade que depende dela; não reutilize a migração inicial.
 
 ## Trazer os dados antigos
 

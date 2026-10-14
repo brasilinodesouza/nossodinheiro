@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { Brand } from "./auth";
+import { InstallButton, useUpdateGuard } from "./app-runtime";
 import {
   generateInvitation,
   refreshFinance,
@@ -127,6 +128,7 @@ export function Dashboard({
   const [partnered, setPartnered] = useState(Boolean(household.partner_id));
   const [invitation, setInvitation] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+  useUpdateGuard(Boolean(editor) || busy || Boolean(pending));
   const state = snapshot.state,
     totals = getTotals(state, month),
     salary = getSalary(state, month);
@@ -1169,6 +1171,7 @@ export function Dashboard({
               </section>
               <section className="settings-section">
                 <h3>Leve para a tela inicial</h3>
+                <InstallButton />
                 <p>
                   No Android, abra o menu do Chrome e escolha “Instalar app” ou
                   “Adicionar à tela inicial”. No iPhone, use Compartilhar no

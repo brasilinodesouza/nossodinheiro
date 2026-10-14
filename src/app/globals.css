@@ -13,6 +13,140 @@
   --radius: 18px;
   color-scheme: dark;
 }
+
+.install-invite {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  max-width: 1160px;
+  margin: 14px auto;
+  padding: 15px 18px;
+  border: 1px solid #e8c97e40;
+  border-radius: 14px;
+  background: #e8c97e0a;
+  position: relative;
+}
+.install-invite strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.install-invite p {
+  font-size: 11px;
+  margin-top: 4px;
+}
+.install-invite > div {
+  flex: 1;
+}
+.install-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #e8c97e14;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+.install-invite .button {
+  font-size: 11px;
+}
+.install-invite > .icon-button {
+  width: 30px;
+}
+.install-app-name {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+.install-app-name strong {
+  font:
+    24px Georgia,
+    serif;
+  color: var(--gold);
+}
+.install-app-name p {
+  font-size: 11px;
+  margin-top: 5px;
+}
+.install-steps {
+  padding-left: 22px;
+  margin: 20px 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.8;
+}
+.install-steps li {
+  margin-bottom: 13px;
+  padding-left: 4px;
+}
+.install-steps strong {
+  color: var(--text);
+  font-weight: 500;
+}
+.install-steps svg {
+  vertical-align: middle;
+  color: var(--gold);
+}
+.app-update-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #7ec8e811;
+  color: var(--blue);
+  font-size: 12px;
+  line-height: 1.7;
+  padding: 11px 18px;
+}
+.install-modal {
+  z-index: 40;
+}
+.install-modal > .text-link {
+  display: flex;
+  margin: 10px auto 0;
+}
+.install-modal > .form-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 650px) {
+  .install-invite {
+    margin: 10px 12px;
+    padding: 13px 12px;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .install-invite > div {
+    padding-right: 23px;
+  }
+  .install-invite strong {
+    font-size: 12px;
+  }
+  .install-invite p {
+    font-size: 10px;
+    line-height: 1.7;
+  }
+  .install-invite > .icon-button {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+  }
+  .install-invite .button {
+    width: 100%;
+    min-height: 40px;
+    font-size: 12px;
+  }
+  .install-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .app-update-status {
+    font-size: 10px;
+    padding: 10px 14px;
+  }
+}
 * {
   box-sizing: border-box;
 }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { PGlite } from "@electric-sql/pglite";
 
 test("SQL: espaço compartilhado, isolamento por RLS, convites e conflito de versão", async () => {
@@ -24,12 +24,18 @@ test("SQL: espaço compartilhado, isolamento por RLS, convites e conflito de ver
       grant usage on schema auth, public to authenticated, anon;
       grant execute on function auth.uid() to authenticated, anon;
       insert into auth.users values ('${owner}'), ('${partner}'), ('${outsider}'), ('${fourth}'), ('${fifth}'), ('${sixth}');`);
-    await db.exec(
-      await readFile(
-        new URL("../supabase/schema.sql", import.meta.url),
-        "utf8",
-      ),
+    const migrationsDirectory = new URL(
+      "../supabase/migrations/",
+      import.meta.url,
     );
+    const migrations = (await readdir(migrationsDirectory))
+      .filter((name) => name.endsWith(".sql"))
+      .sort();
+    assert.ok(migrations.length > 0);
+    for (const migration of migrations)
+      await db.exec(
+        await readFile(new URL(migration, migrationsDirectory), "utf8"),
+      );
     await asUser(owner);
     const created = await db.query<{ id: string }>(
       "select public.create_household('Nosso lar') as id",

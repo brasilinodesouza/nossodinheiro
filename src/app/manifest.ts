@@ -2,12 +2,16 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
+    id: "/",
     name: "Nosso Dinheiro — Finanças do casal",
     short_name: "Nosso Dinheiro",
     description: "Cuidem do dinheiro e dos planos de vocês, juntos.",
     start_url: "/",
     scope: "/",
     display: "standalone",
+    orientation: "portrait-primary",
+    categories: ["finance", "productivity"],
+    prefer_related_applications: false,
     background_color: "#101117",
     theme_color: "#101117",
     lang: "pt-BR",
