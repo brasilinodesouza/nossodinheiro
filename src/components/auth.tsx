@@ -120,7 +120,7 @@ export function AuthForm({
           )}
           <form onSubmit={submit}>
             <label>
-              Usuário
+              Login
               <input
                 autoComplete="username"
                 autoCapitalize="none"
@@ -128,7 +128,6 @@ export function AuthForm({
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Ex.: brasilino"
                 required
                 minLength={3}
                 maxLength={32}
