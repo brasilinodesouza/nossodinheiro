@@ -149,7 +149,11 @@ export function AuthForm({
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Pelo menos 8 caracteres"
+                placeholder={
+                  mode === "signup"
+                    ? "Pelo menos 8 caracteres"
+                    : "Digite sua senha"
+                }
                 disabled={busy || !configured}
               />
             </label>
