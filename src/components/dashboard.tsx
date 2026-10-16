@@ -33,6 +33,7 @@ import {
   X,
 } from "lucide-react";
 import { Brand } from "./auth";
+import { PasswordChangeForm } from "./password-change";
 import { InstallButton, useUpdateGuard } from "./app-runtime";
 import { invitationLink } from "@/lib/invitation";
 import { syncDecision, syncSignal } from "@/lib/sync";
@@ -1186,6 +1187,13 @@ export function Dashboard({
                   </p>
                 </div>
               </div>
+              <PasswordChangeForm
+                disabled={busy}
+                onBusyChange={(value) => {
+                  busyRef.current = value;
+                  setBusy(value);
+                }}
+              />
               <section className="settings-section">
                 <h3>Convidar parceiro(a)</h3>
                 <p>
@@ -1282,7 +1290,7 @@ export function Dashboard({
                 </p>
               )}
               <form action={signOut}>
-                <button className="button secondary full">
+                <button className="button secondary full" disabled={busy}>
                   <LogOut size={16} />
                   Sair da conta
                 </button>

@@ -6,6 +6,7 @@ App de finanças para um casal, feito com Next.js, React, TypeScript e Supabase,
 
 - Interface para celular e computador, com navegação inferior no celular.
 - Conta individual com usuário e senha, sem solicitar endereço de e-mail ou enviar mensagens.
+- Alteração de senha em **Configurações e backup → Alterar senha**, confirmando a senha atual e a nova senha.
 - Espaço com vários participantes, todos com acesso completo aos dados financeiros.
 - Convite por link, com opção de copiar ou compartilhar pelo celular; entrada com usuário e senha.
 - Salários, descontos e comissões separados para cada pessoa e mês.
@@ -51,7 +52,11 @@ O token do link fica no fragmento (`/convite#...`), que não é enviado nos pedi
 
 Nomes de usuário são normalizados para minúsculas e aceitam letras ASCII, números, ponto, hífen e sublinhado, começando com letra ou número. Internamente, o servidor transforma o nome em um identificador determinístico em hexadecimal no domínio reservado `usuarios.nossodinheiro.invalid`, porque o Supabase Auth exige um identificador em formato de e-mail para contas com senha. Esse domínio não possui caixa postal; o app não pede um endereço real. Cadastro e login usam exatamente a mesma transformação. O Supabase continua armazenando o hash da senha e emitindo sessões; as políticas RLS usam o UUID autenticado, nunca o nome de usuário. Não altere esse mapeamento depois de cadastrar contas sem planejar uma migração.
 
+Para trocar sua senha, abra **Configurações e backup → Alterar senha**, informe a senha atual e digite a nova senha duas vezes. Use de 8 a 128 caracteres e uma senha diferente da atual. A senha atual é validada no servidor antes da alteração no Supabase; a conta permanece conectada e o formulário é limpo após o sucesso.
+
 A recuperação por e-mail foi removida. Esta versão não oferece recuperação automática de senha; guarde a senha no gerenciador do celular. As antigas rotas de confirmação e recuperação redirecionam ao login.
+
+A migração `20261016121647_remove_email_recovery.sql` remove a tabela auxiliar de logins e o gatilho criados durante a preparação da recuperação por e-mail. Ela preserva contas, senhas e dados financeiros e interrompe a execução se houver alguma conta usando e-mail real. Essa limpeza ainda precisa ser aplicada ao projeto hospedado. O app não consulta mais essa estrutura e não precisa de chave administrativa.
 
 ## Publicar na Vercel
 

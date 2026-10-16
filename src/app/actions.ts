@@ -7,6 +7,7 @@ import { getHousehold, loadSnapshot } from "@/lib/data";
 import { MAX_BACKUP_BYTES, parseState, type Snapshot } from "@/lib/finance";
 import { credentialsSchema, usernameToIdentity } from "@/lib/credentials";
 import { invitationToken } from "@/lib/invitation";
+import { changePasswordWithAuth } from "@/lib/password";
 
 type Result<T> =
   { ok: true; value: T } | { ok: false; error: string; conflict?: boolean };
@@ -61,6 +62,18 @@ export async function authenticate(
       ok: false,
       error:
         "Não foi possível conectar. Confira a configuração do Supabase e tente novamente.",
+    };
+  }
+}
+
+export async function changePassword(input: unknown): Promise<Result<string>> {
+  try {
+    const client = await createClient();
+    return await changePasswordWithAuth(client.auth, input);
+  } catch {
+    return {
+      ok: false,
+      error: "Não foi possível conectar. Tente novamente.",
     };
   }
 }

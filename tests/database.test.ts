@@ -21,12 +21,12 @@ test("SQL: espaço compartilhado, isolamento por RLS, convites e conflito de ver
     );
   }
   try {
-    await db.exec(`create role anon; create role authenticated; create schema auth;
-      create table auth.users(id uuid primary key);
+    await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth;
+      create table auth.users(id uuid primary key, email text, raw_user_meta_data jsonb default '{}'::jsonb);
       create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid; $$;
       grant usage on schema auth, public to authenticated, anon;
       grant execute on function auth.uid() to authenticated, anon;
-      insert into auth.users values ('${owner}'), ('${partner}'), ('${outsider}'), ('${fourth}'), ('${fifth}'), ('${sixth}'), ('${legacyOwner}'), ('${legacyPartner}');`);
+      insert into auth.users (id) values ('${owner}'), ('${partner}'), ('${outsider}'), ('${fourth}'), ('${fifth}'), ('${sixth}'), ('${legacyOwner}'), ('${legacyPartner}');`);
     const migrationsDirectory = new URL(
       "../supabase/migrations/",
       import.meta.url,
@@ -56,6 +56,27 @@ test("SQL: espaço compartilhado, isolamento por RLS, convites e conflito de ver
         );
       }
     }
+    assert.deepEqual(
+      (
+        await db.query(
+          "select to_regclass('public.account_logins') as registry",
+        )
+      ).rows,
+      [{ registry: null }],
+    );
+    assert.deepEqual(
+      (
+        await db.query(
+          "select tgname from pg_trigger where tgname = 'register_account_login'",
+        )
+      ).rows,
+      [],
+    );
+    // Signup must work again without email-specific metadata or a registry.
+    await db.query("insert into auth.users (id, email) values ($1, $2)", [
+      "00000000-0000-4000-8000-000000000009",
+      "6e6f766f@usuarios.nossodinheiro.invalid",
+    ]);
     for (const member of [legacyOwner, legacyPartner]) {
       await asUser(member);
       assert.deepEqual(
