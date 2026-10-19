@@ -23,7 +23,14 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{var t=localStorage.getItem("nosso-dinheiro-theme");document.documentElement.dataset.theme=t==="light"?"light":"dark";if(t==="light"){document.querySelector('meta[name="theme-color"]')?.setAttribute("content","#f7f6f2");}}catch{}`,
+          }}
+        />
+      </head>
       <body>
         <AppRuntime>{children}</AppRuntime>
       </body>

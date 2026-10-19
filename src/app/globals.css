@@ -11,7 +11,41 @@
   --text: #efedf2;
   --muted: #9a9aad;
   --radius: 18px;
+  --primary-text: #22211b;
+  --primary-hover: #f3d796;
+  --secondary-hover: #2a2b39;
+  --link-hover: #f5dba3;
+  --selected: #353440;
+  --nav-bg: #191a23f5;
   color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface2: #eeedf0;
+  --border: #d8d6de;
+  --gold: #806015;
+  --blue: #216984;
+  --pink: #9a3f69;
+  --green: #267249;
+  --red: #ae3935;
+  --text: #252430;
+  --muted: #656374;
+  --primary-text: #ffffff;
+  --primary-hover: #6c5010;
+  --secondary-hover: #e1dfe6;
+  --link-hover: #63480b;
+  --selected: #ffffff;
+  --nav-bg: #fffffff5;
+  color-scheme: light;
+}
+
+.theme-picker button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .install-invite {
@@ -326,10 +360,10 @@ textarea:focus-visible {
 }
 .primary {
   background: var(--gold);
-  color: #22211b;
+  color: var(--primary-text);
 }
 .primary:hover:not(:disabled) {
-  background: #f3d796;
+  background: var(--primary-hover);
 }
 .secondary {
   background: var(--surface2);
@@ -337,7 +371,7 @@ textarea:focus-visible {
   border-color: var(--border);
 }
 .secondary:hover:not(:disabled) {
-  background: #2a2b39;
+  background: var(--secondary-hover);
 }
 .danger {
   background: #f1a19e22;
@@ -377,7 +411,7 @@ textarea:focus-visible {
   font-weight: 500;
 }
 .text-link:hover {
-  color: #f5dba3;
+  color: var(--link-hover);
 }
 .delete-button:hover:not(:disabled) {
   color: var(--red);
@@ -622,7 +656,7 @@ label textarea:focus {
   font-size: 12px;
 }
 .segmented button.active {
-  background: #353440;
+  background: var(--selected);
   color: var(--gold);
 }
 /* Espaço principal */
@@ -1588,7 +1622,7 @@ label textarea:focus {
     min-height: 71px;
     border-top: 1px solid var(--border);
     border-bottom: 0;
-    background: #191a23f5;
+    background: var(--nav-bg);
     backdrop-filter: blur(12px);
     z-index: 20;
     padding: 5px 8px calc(5px + env(safe-area-inset-bottom));

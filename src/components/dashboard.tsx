@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { Brand } from "./auth";
 import { PasswordChangeForm } from "./password-change";
+import { ThemePicker } from "./theme-picker";
 import { InstallButton, useUpdateGuard } from "./app-runtime";
 import { invitationLink } from "@/lib/invitation";
 import { syncDecision, syncSignal } from "@/lib/sync";
@@ -1187,6 +1188,7 @@ export function Dashboard({
                   </p>
                 </div>
               </div>
+              <ThemePicker />
               <PasswordChangeForm
                 disabled={busy}
                 onBusyChange={(value) => {
